@@ -1,4 +1,4 @@
-module github.com/agentsafe/agentsafe
+module github.com/brian93512/agentsafe
 
 go 1.24.5
 

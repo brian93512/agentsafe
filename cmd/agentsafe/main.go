@@ -6,10 +6,10 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/agentsafe/agentsafe/pkg/adapter/mcp"
-	"github.com/agentsafe/agentsafe/pkg/analyzer"
-	"github.com/agentsafe/agentsafe/pkg/gateway"
-	"github.com/agentsafe/agentsafe/pkg/model"
+	"github.com/brian93512/agentsafe/pkg/adapter/mcp"
+	"github.com/brian93512/agentsafe/pkg/analyzer"
+	"github.com/brian93512/agentsafe/pkg/gateway"
+	"github.com/brian93512/agentsafe/pkg/model"
 	"github.com/spf13/cobra"
 )
 

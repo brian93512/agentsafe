@@ -4,8 +4,8 @@ import (
 	"context"
 	"testing"
 
-	"github.com/agentsafe/agentsafe/pkg/adapter/openai"
-	"github.com/agentsafe/agentsafe/pkg/model"
+	"github.com/brian93512/agentsafe/pkg/adapter/openai"
+	"github.com/brian93512/agentsafe/pkg/model"
 	"github.com/stretchr/testify/assert"
 )
 

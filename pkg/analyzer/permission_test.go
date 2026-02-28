@@ -3,9 +3,9 @@ package analyzer_test
 import (
 	"testing"
 
-	"github.com/agentsafe/agentsafe/internal/jsonschema"
-	"github.com/agentsafe/agentsafe/pkg/analyzer"
-	"github.com/agentsafe/agentsafe/pkg/model"
+	"github.com/brian93512/agentsafe/internal/jsonschema"
+	"github.com/brian93512/agentsafe/pkg/analyzer"
+	"github.com/brian93512/agentsafe/pkg/model"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

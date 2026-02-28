@@ -6,7 +6,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/agentsafe/agentsafe/pkg/model"
+	"github.com/brian93512/agentsafe/pkg/model"
 )
 
 // severityWeight maps a Severity to its numeric risk contribution.
