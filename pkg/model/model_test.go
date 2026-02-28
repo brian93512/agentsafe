@@ -3,8 +3,9 @@ package model_test
 import (
 	"testing"
 
-	"github.com/brian93512/agentsafe/pkg/model"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/brian93512/agentsafe/pkg/model"
 )
 
 // --- UnifiedTool ---

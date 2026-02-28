@@ -3,11 +3,12 @@ package analyzer_test
 import (
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
 	"github.com/brian93512/agentsafe/internal/jsonschema"
 	"github.com/brian93512/agentsafe/pkg/analyzer"
 	"github.com/brian93512/agentsafe/pkg/model"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 func TestPermissionChecker_NoPermissions(t *testing.T) {

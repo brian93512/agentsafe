@@ -4,9 +4,10 @@ import (
 	"context"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+
 	"github.com/brian93512/agentsafe/pkg/adapter/skills"
 	"github.com/brian93512/agentsafe/pkg/model"
-	"github.com/stretchr/testify/assert"
 )
 
 func TestAdapter_Protocol(t *testing.T) {

@@ -6,11 +6,12 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/spf13/cobra"
+
 	"github.com/brian93512/agentsafe/pkg/adapter/mcp"
 	"github.com/brian93512/agentsafe/pkg/analyzer"
 	"github.com/brian93512/agentsafe/pkg/gateway"
 	"github.com/brian93512/agentsafe/pkg/model"
-	"github.com/spf13/cobra"
 )
 
 // version is set at build time via -ldflags.
@@ -59,8 +60,8 @@ type ScanSummary struct {
 
 func newScanCmd() *cobra.Command {
 	var (
-		inputFile string
-		protocol  string
+		inputFile  string
+		protocol   string
 		outputFile string
 	)
 

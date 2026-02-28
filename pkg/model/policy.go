@@ -16,7 +16,9 @@ func ActionFromGrade(g Grade) Action {
 		return ActionAllow
 	case GradeC, GradeD:
 		return ActionRequireApproval
-	default: // GradeF
+	case GradeF:
+		return ActionBlock
+	default:
 		return ActionBlock
 	}
 }

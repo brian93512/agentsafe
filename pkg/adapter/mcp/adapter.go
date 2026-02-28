@@ -61,7 +61,7 @@ func convertSchema(s InputSchema) jsonschema.Schema {
 
 // permissionRule maps keyword signals to a Permission.
 type permissionRule struct {
-	propKeys    []string // property names that imply this permission
+	propKeys     []string // property names that imply this permission
 	descKeywords []string // description substrings (lowercased) that imply it
 }
 
@@ -72,42 +72,42 @@ var permissionRules = []struct {
 	{
 		model.PermissionFS,
 		permissionRule{
-			propKeys:    []string{"path", "filepath", "filename", "file", "dir", "directory"},
+			propKeys:     []string{"path", "filepath", "filename", "file", "dir", "directory"},
 			descKeywords: []string{"file", "filesystem", "directory", "folder", "read file", "write file"},
 		},
 	},
 	{
 		model.PermissionNetwork,
 		permissionRule{
-			propKeys:    []string{"url", "uri", "endpoint", "host"},
+			propKeys:     []string{"url", "uri", "endpoint", "host"},
 			descKeywords: []string{"url", "network", "http", "https", "fetch", "remote", "request", "download"},
 		},
 	},
 	{
 		model.PermissionExec,
 		permissionRule{
-			propKeys:    []string{"command", "cmd", "shell", "script"},
+			propKeys:     []string{"command", "cmd", "shell", "script"},
 			descKeywords: []string{"execute", "run command", "shell", "subprocess", "exec", "terminal"},
 		},
 	},
 	{
 		model.PermissionDB,
 		permissionRule{
-			propKeys:    []string{"query", "sql", "table", "database"},
+			propKeys:     []string{"query", "sql", "table", "database"},
 			descKeywords: []string{"database", "sql", "query", "db", "postgres", "mysql", "sqlite"},
 		},
 	},
 	{
 		model.PermissionEnv,
 		permissionRule{
-			propKeys:    []string{"env", "environment", "envvar"},
+			propKeys:     []string{"env", "environment", "envvar"},
 			descKeywords: []string{"environment variable", "env var", "process env"},
 		},
 	},
 	{
 		model.PermissionHTTP,
 		permissionRule{
-			propKeys:    []string{"headers", "method", "body", "payload"},
+			propKeys:     []string{"headers", "method", "body", "payload"},
 			descKeywords: []string{"http request", "api call", "rest", "webhook"},
 		},
 	},

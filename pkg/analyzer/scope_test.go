@@ -3,10 +3,11 @@ package analyzer_test
 import (
 	"testing"
 
-	"github.com/brian93512/agentsafe/pkg/analyzer"
-	"github.com/brian93512/agentsafe/pkg/model"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/brian93512/agentsafe/pkg/analyzer"
+	"github.com/brian93512/agentsafe/pkg/model"
 )
 
 func TestScopeChecker_NoMismatch(t *testing.T) {

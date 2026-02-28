@@ -2,22 +2,27 @@ version: "2"
 
 linters:
   enable:
-    - errcheck       # check for unchecked errors
-    - govet          # go vet checks
-    - staticcheck    # staticcheck suite
-    - unused         # detect unused code
-    - gosimple       # simplification suggestions
-    - ineffassign    # detect ineffectual assignments
-    - gofmt          # formatting
-    - goimports      # import ordering
-    - misspell       # catch common typos
-    - gocritic       # opinionated style checks
-    - noctx          # detect http calls without context
-    - bodyclose      # ensure http response bodies are closed
-    - contextcheck   # ensure functions receive and forward ctx
-    - godot          # ensure comments end with a period
-    - exhaustive     # check exhaustive switch statements on enums
-    - wrapcheck      # ensure errors from external packages are wrapped
+    - errcheck        # unchecked errors
+    - govet           # go vet checks (includes shadow)
+    - staticcheck     # staticcheck suite (includes gosimple + unused)
+    - ineffassign     # ineffectual assignments
+    - misspell        # common typos
+    - gocritic        # opinionated style
+    - noctx           # http calls without context
+    - bodyclose       # unclosed http response bodies
+    - contextcheck    # functions that should forward ctx
+    - godot           # comments end with a period
+    - exhaustive      # exhaustive enum switches
+    - wrapcheck       # errors from external packages should be wrapped
+
+formatters:
+  enable:
+    - gofmt
+    - goimports
+  settings:
+    goimports:
+      local-prefixes:
+        - github.com/brian93512/agentsafe
 
 linters-settings:
   errcheck:
@@ -27,12 +32,6 @@ linters-settings:
   govet:
     enable:
       - shadow
-
-  gofmt:
-    simplify: true
-
-  goimports:
-    local-prefixes: github.com/brian93512/agentsafe
 
   gocritic:
     enabled-tags:
@@ -49,14 +48,12 @@ linters-settings:
 
 issues:
   exclude-rules:
-    # Test files are allowed to have longer functions and skip some checks
     - path: "_test\\.go"
       linters:
         - wrapcheck
         - errcheck
         - godot
 
-    # Stub adapters intentionally return unimplemented errors
     - path: "pkg/adapter/(openai|skills)/adapter\\.go"
       linters:
         - wrapcheck
