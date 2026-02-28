@@ -1,0 +1,8 @@
+dist/
+.git/
+.github/
+.cursor/
+*.test
+coverage.out
+coverage.html
+.DS_Store

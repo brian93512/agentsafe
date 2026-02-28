@@ -1,0 +1,182 @@
+name: CI
+
+on:
+  push:
+    branches: ["main", "master", "dev"]
+  pull_request:
+    branches: ["main", "master", "dev"]
+
+# Cancel redundant runs on the same branch/PR
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ── 1. Test ────────────────────────────────────────────────────────────────
+  test:
+    name: Test (Go ${{ matrix.go }})
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        go: ["1.24"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ matrix.go }}
+          cache: true
+
+      - name: Download modules
+        run: go mod download
+
+      - name: Verify modules
+        run: go mod verify
+
+      - name: Run all tests with race detector
+        run: go test -race -count=1 -timeout=120s ./...
+
+      - name: Run coverage (pkg/ + internal/ only)
+        # cmd/ packages are integration wiring with no unit tests; excluding
+        # them keeps the coverage metric representative of business logic.
+        run: go test -race -count=1 -coverprofile=coverage.out ./pkg/... ./internal/...
+
+      - name: Check test coverage threshold (≥60%)
+        run: |
+          COVERAGE=$(go tool cover -func=coverage.out | grep total | awk '{print $3}' | tr -d '%')
+          echo "Total coverage: ${COVERAGE}%"
+          if (( $(echo "$COVERAGE < 60" | bc -l) )); then
+            echo "Coverage ${COVERAGE}% is below minimum threshold of 60%"
+            exit 1
+          fi
+
+      - name: Upload coverage to GitHub summary
+        run: |
+          go tool cover -func=coverage.out >> $GITHUB_STEP_SUMMARY
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          files: coverage.out
+          flags: unittests
+          fail_ci_if_error: false   # don't break CI if Codecov is unreachable
+
+      - name: Upload coverage artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage.out
+          retention-days: 7
+
+  # ── 2. Lint ────────────────────────────────────────────────────────────────
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.24"
+          cache: true
+
+      - name: Run golangci-lint
+        uses: golangci/golangci-lint-action@v6
+        with:
+          version: latest
+          args: --timeout=5m
+
+  # ── 3. Build ───────────────────────────────────────────────────────────────
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    needs: [test]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.24"
+          cache: true
+
+      - name: Build CLI
+        run: go build -v ./cmd/agentsafe/...
+
+      - name: Build MCP Server
+        run: go build -v ./cmd/mcpserver/...
+
+  # ── 4. Self-scan (AgentSafe scans itself) ─────────────────────────────────
+  self-scan:
+    name: AgentSafe Self-Scan
+    runs-on: ubuntu-latest
+    needs: [build]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.24"
+          cache: true
+
+      - name: Build agentsafe binary
+        run: go build -o /tmp/agentsafe ./cmd/agentsafe/
+
+      - name: Create sample MCP tools fixture
+        run: |
+          cat > /tmp/ci_tools.json << 'EOF'
+          {
+            "tools": [
+              {
+                "name": "read_file",
+                "description": "Read the contents of a file from the filesystem.",
+                "inputSchema": {
+                  "type": "object",
+                  "properties": {
+                    "path": { "type": "string", "description": "absolute file path" }
+                  },
+                  "required": ["path"]
+                }
+              },
+              {
+                "name": "fetch_url",
+                "description": "Fetch the content of a remote URL.",
+                "inputSchema": {
+                  "type": "object",
+                  "properties": {
+                    "url": { "type": "string" }
+                  }
+                }
+              }
+            ]
+          }
+          EOF
+
+      - name: Run AgentSafe scan
+        run: |
+          /tmp/agentsafe scan --protocol mcp --input /tmp/ci_tools.json --output /tmp/scan_report.json
+          cat /tmp/scan_report.json
+
+      - name: Fail if any tool is BLOCKED
+        run: |
+          BLOCKED=$(jq '.summary.blocked' /tmp/scan_report.json)
+          echo "Blocked tools: $BLOCKED"
+          if [ "$BLOCKED" -gt "0" ]; then
+            echo "AgentSafe self-scan found $BLOCKED BLOCKED tool(s) — review the scan report."
+            cat /tmp/scan_report.json
+            exit 1
+          fi
+
+      - name: Upload scan report
+        uses: actions/upload-artifact@v4
+        with:
+          name: agentsafe-scan-report
+          path: /tmp/scan_report.json
+          retention-days: 30

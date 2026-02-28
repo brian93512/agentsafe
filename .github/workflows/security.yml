@@ -1,0 +1,120 @@
+name: Security
+
+on:
+  push:
+    branches: ["main", "master"]
+  pull_request:
+    branches: ["main", "master"]
+  schedule:
+    # Run every Monday at 08:00 UTC
+    - cron: "0 8 * * 1"
+
+permissions:
+  contents: read
+  security-events: write   # needed to upload SARIF results to GitHub Security tab
+
+jobs:
+  # ── 1. Go vulnerability scan (govulncheck) ────────────────────────────────
+  govulncheck:
+    name: Go Vulnerability Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.24"
+          cache: true
+
+      - name: Install govulncheck
+        run: go install golang.org/x/vuln/cmd/govulncheck@latest
+
+      - name: Run govulncheck
+        run: govulncheck ./...
+
+  # ── 2. Static security analysis (gosec) ──────────────────────────────────
+  gosec:
+    name: GoSec Static Analysis
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.24"
+          cache: true
+
+      - name: Run gosec
+        uses: securego/gosec@master
+        with:
+          # -fmt sarif outputs SARIF for the GitHub Security tab
+          # -exclude-dir skips auto-generated / vendor dirs
+          args: >-
+            -fmt sarif
+            -out gosec-results.sarif
+            -severity medium
+            -exclude-dir dist
+            ./...
+
+      - name: Upload SARIF results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: gosec-results.sarif
+
+  # ── 3. Dependency review on PRs ───────────────────────────────────────────
+  dependency-review:
+    name: Dependency Review
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/dependency-review-action@v4
+        with:
+          fail-on-severity: high
+
+  # ── 4. AgentSafe scans its own dependencies' MCP tools (meta-scan) ────────
+  meta-scan:
+    name: AgentSafe Meta-Scan
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.24"
+          cache: true
+
+      - name: Build agentsafe
+        run: go build -o /tmp/agentsafe ./cmd/agentsafe/
+
+      - name: Run meta-scan against project's MCP tool fixtures
+        run: |
+          if [ -f testdata/tools.json ]; then
+            /tmp/agentsafe scan --protocol mcp --input testdata/tools.json --output /tmp/meta_scan.json
+          else
+            echo '{"tools":[]}' > /tmp/empty.json
+            /tmp/agentsafe scan --protocol mcp --input /tmp/empty.json --output /tmp/meta_scan.json
+          fi
+          cat /tmp/meta_scan.json
+
+      - name: Fail on BLOCKED tools
+        run: |
+          BLOCKED=$(jq '.summary.blocked // 0' /tmp/meta_scan.json)
+          if [ "$BLOCKED" -gt "0" ]; then
+            echo "Meta-scan detected $BLOCKED BLOCKED tool(s)."
+            exit 1
+          fi
+          echo "Meta-scan passed — no blocked tools."
+
+      - name: Upload meta-scan report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: meta-scan-report
+          path: /tmp/meta_scan.json
+          retention-days: 30

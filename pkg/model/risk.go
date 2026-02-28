@@ -1,0 +1,68 @@
+package model
+
+// Severity indicates how critical an individual issue is.
+type Severity string
+
+const (
+	SeverityCritical Severity = "CRITICAL"
+	SeverityHigh     Severity = "HIGH"
+	SeverityMedium   Severity = "MEDIUM"
+	SeverityLow      Severity = "LOW"
+	SeverityInfo     Severity = "INFO"
+)
+
+// Grade is the overall letter-grade assigned to a tool's risk score.
+type Grade string
+
+const (
+	GradeA Grade = "A" // 0–10:  no significant risk
+	GradeB Grade = "B" // 11–25: low risk, recommend monitoring
+	GradeC Grade = "C" // 26–50: medium risk, review required
+	GradeD Grade = "D" // 51–75: high risk, manual authorisation needed
+	GradeF Grade = "F" // 76+:   critical risk, block immediately
+)
+
+// GradeFromScore maps a numeric score to a Grade letter.
+func GradeFromScore(score int) Grade {
+	switch {
+	case score <= 10:
+		return GradeA
+	case score <= 25:
+		return GradeB
+	case score <= 50:
+		return GradeC
+	case score <= 75:
+		return GradeD
+	default:
+		return GradeF
+	}
+}
+
+// Issue describes a single risk finding detected during analysis.
+type Issue struct {
+	Severity    Severity
+	Code        string // e.g. "TOOL_POISONING", "SCOPE_MISMATCH"
+	Description string
+	Location    string
+}
+
+// RiskScore is the aggregated result of running all analyzers on a UnifiedTool.
+type RiskScore struct {
+	Score  int
+	Grade  Grade
+	Issues []Issue
+}
+
+// NewRiskScore constructs a RiskScore, automatically deriving the Grade.
+func NewRiskScore(score int, issues []Issue) RiskScore {
+	return RiskScore{
+		Score:  score,
+		Grade:  GradeFromScore(score),
+		Issues: issues,
+	}
+}
+
+// IsClean returns true when the score is zero and no issues were found.
+func (r RiskScore) IsClean() bool {
+	return r.Score == 0 && len(r.Issues) == 0
+}

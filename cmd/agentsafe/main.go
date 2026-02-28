@@ -1,0 +1,145 @@
+package main
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"os"
+
+	"github.com/agentsafe/agentsafe/pkg/adapter/mcp"
+	"github.com/agentsafe/agentsafe/pkg/analyzer"
+	"github.com/agentsafe/agentsafe/pkg/gateway"
+	"github.com/agentsafe/agentsafe/pkg/model"
+	"github.com/spf13/cobra"
+)
+
+// version is set at build time via -ldflags.
+var version = "dev"
+
+func main() {
+	if err := newRootCmd().Execute(); err != nil {
+		os.Exit(1)
+	}
+}
+
+func newRootCmd() *cobra.Command {
+	root := &cobra.Command{
+		Use:   "agentsafe",
+		Short: "AI Agent Tool Security Scanner",
+		Long:  "AgentSafe scans AI agent tool definitions for security risks and generates gateway policies.",
+	}
+	root.AddCommand(newVersionCmd())
+	root.AddCommand(newScanCmd())
+	return root
+}
+
+func newVersionCmd() *cobra.Command {
+	return &cobra.Command{
+		Use:   "version",
+		Short: "Print the AgentSafe version",
+		Run: func(_ *cobra.Command, _ []string) {
+			fmt.Println("agentsafe", version)
+		},
+	}
+}
+
+// ScanReport is the JSON-serialisable output of the scan command.
+type ScanReport struct {
+	Policies []model.GatewayPolicy `json:"policies"`
+	Summary  ScanSummary           `json:"summary"`
+}
+
+// ScanSummary gives a high-level overview of the scan result.
+type ScanSummary struct {
+	Total    int `json:"total"`
+	Allowed  int `json:"allowed"`
+	Approval int `json:"requireApproval"`
+	Blocked  int `json:"blocked"`
+}
+
+func newScanCmd() *cobra.Command {
+	var (
+		inputFile string
+		protocol  string
+		outputFile string
+	)
+
+	cmd := &cobra.Command{
+		Use:   "scan",
+		Short: "Scan tool definitions and generate gateway policies",
+		Example: `  agentsafe scan --protocol mcp --input tools.json
+  agentsafe scan --protocol mcp --input tools.json --output report.json`,
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			return runScan(cmd.Context(), inputFile, protocol, outputFile)
+		},
+	}
+
+	cmd.Flags().StringVarP(&inputFile, "input", "i", "", "path to tool definition file (required)")
+	cmd.Flags().StringVarP(&protocol, "protocol", "p", "mcp", "protocol format: mcp | openai | skills")
+	cmd.Flags().StringVarP(&outputFile, "output", "o", "", "write JSON report to file (default: stdout)")
+	_ = cmd.MarkFlagRequired("input")
+
+	return cmd
+}
+
+func runScan(ctx context.Context, inputFile, protocol, outputFile string) error {
+	data, err := os.ReadFile(inputFile)
+	if err != nil {
+		return fmt.Errorf("cannot read input file: %w", err)
+	}
+
+	var tools []model.UnifiedTool
+
+	switch protocol {
+	case "mcp":
+		a := mcp.NewAdapter()
+		tools, err = a.Parse(ctx, data)
+		if err != nil {
+			return fmt.Errorf("parse error: %w", err)
+		}
+	default:
+		return fmt.Errorf("unsupported protocol %q (supported: mcp)", protocol)
+	}
+
+	scanner := analyzer.NewScanner()
+	var policies []model.GatewayPolicy
+	summary := ScanSummary{Total: len(tools)}
+
+	for _, tool := range tools {
+		score, err := scanner.Scan(ctx, tool)
+		if err != nil {
+			return fmt.Errorf("scan failed for tool %q: %w", tool.Name, err)
+		}
+		policy, err := gateway.Evaluate(tool.Name, score)
+		if err != nil {
+			return fmt.Errorf("gateway evaluation failed for tool %q: %w", tool.Name, err)
+		}
+		policies = append(policies, policy)
+
+		switch policy.Action {
+		case model.ActionAllow:
+			summary.Allowed++
+		case model.ActionRequireApproval:
+			summary.Approval++
+		case model.ActionBlock:
+			summary.Blocked++
+		}
+	}
+
+	report := ScanReport{Policies: policies, Summary: summary}
+	encoded, err := json.MarshalIndent(report, "", "  ")
+	if err != nil {
+		return fmt.Errorf("failed to encode report: %w", err)
+	}
+
+	if outputFile != "" {
+		if err := os.WriteFile(outputFile, encoded, 0o644); err != nil {
+			return fmt.Errorf("failed to write output file: %w", err)
+		}
+		fmt.Fprintf(os.Stderr, "report written to %s\n", outputFile)
+		return nil
+	}
+
+	fmt.Println(string(encoded))
+	return nil
+}
