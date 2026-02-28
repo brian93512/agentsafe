@@ -48,12 +48,11 @@ jobs:
 
       - name: Run gosec
         uses: securego/gosec@master
+        continue-on-error: true   # findings upload to Security tab; don't block CI
         with:
-          # -no-fail: report findings to GitHub Security tab without blocking CI.
-          # Intentional security findings (e.g. G304 file-path from CLI flag) are
-          # acceptable here; they are reviewed via the SARIF upload below.
+          # G304 (file path from CLI flag) is intentional behaviour in a CLI tool.
+          # Results are reviewed via the SARIF upload to the GitHub Security tab.
           args: >-
-            -no-fail
             -fmt sarif
             -out gosec-results.sarif
             -severity medium
