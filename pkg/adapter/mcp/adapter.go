@@ -28,7 +28,11 @@ func (a *Adapter) Parse(_ context.Context, data []byte) ([]model.UnifiedTool, er
 
 	tools := make([]model.UnifiedTool, 0, len(resp.Tools))
 	for _, t := range resp.Tools {
-		raw, _ := json.Marshal(t)
+		raw, err := json.Marshal(t)
+		if err != nil {
+			// Marshalling a plain struct with only string fields should never fail.
+			return nil, fmt.Errorf("mcp adapter: failed to marshal tool %q: %w", t.Name, err)
+		}
 		unified := model.UnifiedTool{
 			Name:        t.Name,
 			Description: t.Description,

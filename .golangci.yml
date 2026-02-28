@@ -1,19 +1,56 @@
 version: "2"
 
 linters:
+  default: none
   enable:
-    - errcheck        # unchecked errors
-    - govet           # go vet checks (includes shadow)
-    - staticcheck     # staticcheck suite (includes gosimple + unused)
-    - ineffassign     # ineffectual assignments
-    - misspell        # common typos
-    - gocritic        # opinionated style
-    - noctx           # http calls without context
-    - bodyclose       # unclosed http response bodies
-    - contextcheck    # functions that should forward ctx
-    - godot           # comments end with a period
-    - exhaustive      # exhaustive enum switches
-    - wrapcheck       # errors from external packages should be wrapped
+    - errcheck
+    - govet
+    - staticcheck
+    - ineffassign
+    - misspell
+    - gocritic
+    - noctx
+    - bodyclose
+    - contextcheck
+    - godot
+    - exhaustive
+    - wrapcheck
+
+  settings:
+    errcheck:
+      check-type-assertions: true
+      check-blank: true
+
+    govet:
+      enable:
+        - shadow
+
+    gocritic:
+      enabled-tags:
+        - diagnostic
+        - style
+        - performance
+      disabled-checks:
+        - hugeParam   # UnifiedTool is the core value type; pointer refactor is a future task
+
+    godot:
+      scope: declarations
+      capital: false
+
+    exhaustive:
+      default-signifies-exhaustive: true
+
+  exclusions:
+    rules:
+      - path: "_test\\.go"
+        linters:
+          - wrapcheck
+          - errcheck
+          - godot
+
+      - path: "pkg/adapter/(openai|skills)/adapter\\.go"
+        linters:
+          - wrapcheck
 
 formatters:
   enable:
@@ -24,39 +61,6 @@ formatters:
       local-prefixes:
         - github.com/brian93512/agentsafe
 
-linters-settings:
-  errcheck:
-    check-type-assertions: true
-    check-blank: true
-
-  govet:
-    enable:
-      - shadow
-
-  gocritic:
-    enabled-tags:
-      - diagnostic
-      - style
-      - performance
-
-  godot:
-    scope: declarations
-    capital: false
-
-  exhaustive:
-    default-signifies-exhaustive: true
-
 issues:
-  exclude-rules:
-    - path: "_test\\.go"
-      linters:
-        - wrapcheck
-        - errcheck
-        - godot
-
-    - path: "pkg/adapter/(openai|skills)/adapter\\.go"
-      linters:
-        - wrapcheck
-
   max-issues-per-linter: 0
   max-same-issues: 0

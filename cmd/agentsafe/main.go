@@ -78,7 +78,10 @@ func newScanCmd() *cobra.Command {
 	cmd.Flags().StringVarP(&inputFile, "input", "i", "", "path to tool definition file (required)")
 	cmd.Flags().StringVarP(&protocol, "protocol", "p", "mcp", "protocol format: mcp | openai | skills")
 	cmd.Flags().StringVarP(&outputFile, "output", "o", "", "write JSON report to file (default: stdout)")
-	_ = cmd.MarkFlagRequired("input")
+	if err := cmd.MarkFlagRequired("input"); err != nil {
+		// Only fails when the flag name is wrong — this is a programming error.
+		panic(err)
+	}
 
 	return cmd
 }
@@ -106,14 +109,14 @@ func runScan(ctx context.Context, inputFile, protocol, outputFile string) error 
 	var policies []model.GatewayPolicy
 	summary := ScanSummary{Total: len(tools)}
 
-	for _, tool := range tools {
-		score, err := scanner.Scan(ctx, tool)
-		if err != nil {
-			return fmt.Errorf("scan failed for tool %q: %w", tool.Name, err)
+	for i := range tools {
+		score, scanErr := scanner.Scan(ctx, tools[i])
+		if scanErr != nil {
+			return fmt.Errorf("scan failed for tool %q: %w", tools[i].Name, scanErr)
 		}
-		policy, err := gateway.Evaluate(tool.Name, score)
-		if err != nil {
-			return fmt.Errorf("gateway evaluation failed for tool %q: %w", tool.Name, err)
+		policy, evalErr := gateway.Evaluate(tools[i].Name, score)
+		if evalErr != nil {
+			return fmt.Errorf("gateway evaluation failed for tool %q: %w", tools[i].Name, evalErr)
 		}
 		policies = append(policies, policy)
 

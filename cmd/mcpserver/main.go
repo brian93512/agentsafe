@@ -101,14 +101,14 @@ func handleScan(ctx context.Context, req mcplib.CallToolRequest) (*mcplib.CallTo
 	var policies []model.GatewayPolicy
 	summary := ScanSummary{Total: len(tools)}
 
-	for _, tool := range tools {
-		score, err := scanner.Scan(ctx, tool)
-		if err != nil {
-			return mcplib.NewToolResultError(fmt.Sprintf("scan failed for tool %q: %v", tool.Name, err)), nil
+	for i := range tools {
+		score, scanErr := scanner.Scan(ctx, tools[i])
+		if scanErr != nil {
+			return mcplib.NewToolResultError(fmt.Sprintf("scan failed for tool %q: %v", tools[i].Name, scanErr)), nil
 		}
-		policy, err := gateway.Evaluate(tool.Name, score)
-		if err != nil {
-			return mcplib.NewToolResultError(fmt.Sprintf("policy evaluation failed for tool %q: %v", tool.Name, err)), nil
+		policy, evalErr := gateway.Evaluate(tools[i].Name, score)
+		if evalErr != nil {
+			return mcplib.NewToolResultError(fmt.Sprintf("policy evaluation failed for tool %q: %v", tools[i].Name, evalErr)), nil
 		}
 		policies = append(policies, policy)
 
