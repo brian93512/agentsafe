@@ -3,7 +3,7 @@
 [![CI](https://github.com/brian93512/agentsafe/actions/workflows/ci.yml/badge.svg)](https://github.com/brian93512/agentsafe/actions/workflows/ci.yml)
 [![Security](https://github.com/brian93512/agentsafe/actions/workflows/security.yml/badge.svg)](https://github.com/brian93512/agentsafe/actions/workflows/security.yml)
 [![codecov](https://codecov.io/gh/brian93512/agentsafe/branch/main/graph/badge.svg)](https://codecov.io/gh/brian93512/agentsafe)
-[![Go Report Card](https://goreportcard.com/badge/github.com/brian93512/agentsafe)](https://goreportcard.com/report/github.com/brian93512/agentsafe)
+[![Go Report Card](https://goreportcard.com/badge/github.com/brian93512/agentsafe?v=2)](https://goreportcard.com/report/github.com/brian93512/agentsafe)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Go Version](https://img.shields.io/badge/go-1.24-00ADD8.svg)](go.mod)
 
